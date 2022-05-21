@@ -11,19 +11,32 @@ contract ChainBattles is ERC721URIStorage {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
-    mapping(uint256 => uint256) public tokenIdToLevels;
+    struct TokenIdToLevels {
+        uint256 Speed;
+        uint256 Level;
+        uint256 Strength;
+        uint256 Life;
+        string Warrior;
+    }
+
+    // TokenIdToLevels[] public tokenLevels;
+
+    mapping(uint256 => TokenIdToLevels) public tokenIdToLevels;
 
     constructor() ERC721 ("Chain Battles", "CBTLS") {
 
     }
 
-    function generateCharacter(uint256 tokenId) public returns(string memory) {
+    function generateCharacter(uint256 tokenId) public view returns(string memory) {
         bytes memory svg = abi.encodePacked(
             '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350">',
             '<style>.base { fill: white; font-family: serif; font-size: 14px; }</style>',
             '<rect width="100%" height="100%" fill="black" />',
-            '<text x="50%" y="40%" class="base" dominant-baseline="middle" text-anchor="middle">',"Warrior",'</text>',
+            '<text x="50%" y="40%" class="base" dominant-baseline="middle" text-anchor="middle">',"Warrior",getWarrior(tokenId),'</text>',
             '<text x="50%" y="50%" class="base" dominant-baseline="middle" text-anchor="middle">', "Levels: ",getLevels(tokenId),'</text>',
+            '<text x="50%" y="50%" class="base" dominant-baseline="middle" text-anchor="middle">', "Speed: ",getSpeed(tokenId),'</text>',
+            '<text x="50%" y="50%" class="base" dominant-baseline="middle" text-anchor="middle">', "Strength: ",getStrength(tokenId),'</text>',
+            '<text x="50%" y="50%" class="base" dominant-baseline="middle" text-anchor="middle">', "Life: ",getLife(tokenId),'</text>',
             '</svg>'
         );
         return string(
@@ -35,8 +48,28 @@ contract ChainBattles is ERC721URIStorage {
     } 
 
     function getLevels(uint256 tokenId) public view returns (string memory) {
-        uint256 levels = tokenIdToLevels[tokenId];
-        return levels.toString();
+        uint256 Level = tokenIdToLevels[tokenId].Level;
+        return Level.toString();
+    }
+
+    function getSpeed(uint256 tokenId) public view returns (string memory) {
+        uint256 Speed = tokenIdToLevels[tokenId].Speed;
+        return Speed.toString();
+    }
+
+    function getStrength(uint256 tokenId) public view returns (string memory) {
+        uint Strength = tokenIdToLevels[tokenId].Strength;
+        return Strength.toString();
+    }
+
+    function getLife(uint256 tokenId) public view returns (string memory) {
+        uint Life = tokenIdToLevels[tokenId].Life;
+        return Life.toString();
+    }
+
+    function getWarrior(uint256 tokenId) public view returns (string memory) {
+        string memory Warrior = tokenIdToLevels[tokenId].Warrior;
+        return Warrior;
     }
 
     function getTokenURI(uint256 tokenId) public returns (string memory){
@@ -59,17 +92,26 @@ contract ChainBattles is ERC721URIStorage {
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
         _safeMint(msg.sender, newItemId);
-        tokenIdToLevels[newItemId] = 0;
+        tokenIdToLevels[newItemId].Level = 1;
+        tokenIdToLevels[newItemId].Life = 1;
+        tokenIdToLevels[newItemId].Speed = 5;
+        tokenIdToLevels[newItemId].Strength = 10;
+        tokenIdToLevels[newItemId].Warrior = "Monster";
         _setTokenURI(newItemId, getTokenURI(newItemId));
     }
 
      function train(uint256 tokenId) public {
         require(_exists(tokenId));
         require(ownerOf(tokenId) == msg.sender, "You must own this NFT to train it!");
-        uint256 currentLevel = tokenIdToLevels[tokenId];
-        tokenIdToLevels[tokenId] = currentLevel + 1;
+        tokenIdToLevels[tokenId].Level += 1;
+        tokenIdToLevels[tokenId].Life = random(1000);
+        tokenIdToLevels[tokenId].Speed *= 3;
+        tokenIdToLevels[tokenId].Strength = random(100);
+        tokenIdToLevels[tokenId].Warrior = (tokenIdToLevels[tokenId].Strength > 25)?"SuperHero": "Super";
         _setTokenURI(tokenId, getTokenURI(tokenId));
     }
 
-    
+    function random(uint number) public view returns(uint) {
+        return uint(keccak256(abi.encodePacked(block.timestamp, block.difficulty, msg.sender))) % number;
+    }
 }
